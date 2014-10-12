@@ -44,7 +44,7 @@ jDosk.fn = jDosk.prototype = {
 				return this;
 			}
 	};
-jDosk.fn.init.prototype = jDosk.fn;  //Initial jDOsk
+jDosk.fn.init.prototype = jDosk.fn;  //Initial jDosk
 
 jDosk.fn.extern({  //Add some functions
 		css : function (obj) {
