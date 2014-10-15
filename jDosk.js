@@ -68,7 +68,7 @@
 						if (typeof obj == "string")
 						{
 							if (tmp == undefined)
-								return this[0].style[obj];
+								return this[0].currentStyle ? this[0].currentStyle[obj] : document.defaultView.getComputedStyle(this[0], false)[obj];
 							else {
 								for (i=0;i<this.length;++i)
 									this[i].style[obj] = tmp;
@@ -80,11 +80,13 @@
 								this[i].style[key] = obj[key];
 						return this;
 					},
-				hide : function () {
+				hide : function (obj) {
 						this.css("display", "none");
+						return this;
 					},
 				show : function () {
 						this.css("display", "");
+						return this;
 					},
 				toggle : function () {
 						if (this.css("display") == "none")
@@ -96,12 +98,59 @@
 				load: function (url) {
 						var self = this;
 						jDosk.get(url, function (data) {
-								self.each(function () {this.innerHTML = data;
+								self.each(function () {
+										this.innerHTML = data;
 									}); 
 							});
+						return this;
+					},
+				animate : function (obj, time, callback) {
+						if (callback == undefined)
+								callback = function () {};
+						if (time == undefined)
+							time = 1000.0;
+						time /= 36.0;
+						for(var key in obj)
+						{
+							var o = this.css(key), t = obj[key];
+							var ext = o.replace(parseFloat(o), "");
+							var s = (parseFloat(t) - parseFloat(o))/time;
+							this.success = false;
+							new jDosk.taskQueue({
+									elem : this,
+									key : key,
+									step : s,
+									ext : ext,
+									target : parseFloat(t),
+									callback : callback
+								});
+						}
+						return this;
 					}
 			});
-		jDosk.extend({  //Add some functions 
+		jDosk.extend({  //Add some functions
+				taskQueue : function (obj) {
+						var self = this;
+						for (var key in obj)
+							self[key] = obj[key];
+						self.timer = setInterval(function () {
+								var tmp = parseFloat(self.elem.css(self.key));
+								if (Math.abs(tmp + self.step - self.target) <= Math.abs(self.step))
+								{
+									self.elem.css(self.key, "" + self.target + self.ext);
+									clearInterval(self.timer);
+									if (self.callback != undefined && !self.elem.success)
+									{
+										self.callback.call(self.elem);
+										self.elem.success = null;
+										delete self.elem.success;
+									}
+									self = null;
+									delete self;
+								} else
+									self.elem.css(self.key, "" + (tmp + self.step) + self.ext);
+							}, 1000.0/36.0);  //36 fps......
+					},
 				objectType : function(obj) {
 						class2type = {  
 							'[object Boolean]' : 'boolean',
@@ -177,7 +226,7 @@
 							dataType : type
 						})
 					},
-				get : function (url, data, callback, type) {
+				post : function (url, data, callback, type) {
 						if (jDosk.isFunction(data))
 						{
 							type = type || callback;
